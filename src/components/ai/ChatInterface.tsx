@@ -293,16 +293,22 @@ export function ChatInterface({ selectedFileId, selectedFileName, chatId: propCh
         <h2 className="text-xl font-bold">Chat with AI Assistant</h2>
         <div className="flex items-center gap-3">
           {/* Model Selection */}
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="gpt-4o-mini">gpt-4o-mini</option>
-            <option value="gpt-5-mini">gpt-5-mini</option>
-            <option value="gpt-5-nano">gpt-5-nano</option>
-            <option value="gpt-5">gpt-5</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <label htmlFor="model-select" className="text-sm text-gray-600 font-medium">
+              Model:
+            </label>
+            <select
+              id="model-select"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            >
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+              <option value="gpt-5-mini">gpt-5-mini</option>
+              <option value="gpt-5-nano">gpt-5-nano</option>
+              <option value="gpt-5">gpt-5</option>
+            </select>
+          </div>
           {messages.length > 1 && (
             <Button
               variant="ghost"
@@ -352,8 +358,8 @@ export function ChatInterface({ selectedFileId, selectedFileName, chatId: propCh
                   <div
                     className={`max-w-[85%] ${
                       message.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-2xl rounded-br-none'
-                        : 'bg-muted/50 backdrop-blur-sm rounded-2xl rounded-bl-none'
+                        ? 'bg-white text-gray-900 border border-gray-200 rounded-2xl rounded-br-none'
+                        : 'bg-gray-100 rounded-2xl rounded-bl-none'
                     } p-3`}
                   >
                     <div className="overflow-hidden">
@@ -366,8 +372,8 @@ export function ChatInterface({ selectedFileId, selectedFileName, chatId: propCh
               ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-muted/50 rounded-2xl rounded-bl-none p-3 flex items-center">
-                  <Loader2 className="w-4 h-4 mr-2 text-primary animate-spin" />
+                <div className="bg-gray-100 rounded-2xl rounded-bl-none p-3 flex items-center">
+                  <Loader2 className="w-4 h-4 mr-2 text-gray-600 animate-spin" />
                   <span className="text-sm">Analyzing...</span>
                 </div>
               </div>

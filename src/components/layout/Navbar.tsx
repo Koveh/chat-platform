@@ -257,7 +257,7 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
       <div
         ref={sidebarRef}
         className={cn(
-          "h-screen bg-gray-100 flex flex-col transition-all duration-300 relative border-r border-gray-200",
+          "h-screen bg-gray-100 flex flex-col transition-all duration-300 relative",
           isResizing ? "transition-none select-none" : "transition-width",
           collapsed ? "w-16" : "",
           isMobile && "fixed top-0 left-0 z-40",
@@ -268,7 +268,7 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
         {...props}
       >
         {/* Top header with buttons */}
-        <div className="flex items-center justify-between p-2">
+        <div className="flex items-center justify-between p-2 pt-4">
           <div className={cn("flex gap-1", collapsed && "w-full justify-center")}>
             <Tooltip>
               <TooltipTrigger asChild>
