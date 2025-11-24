@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, FileText, Eye, X } from "lucide-react"
@@ -16,44 +16,78 @@ import {
 } from "@/components/ui/dialog"
 
 export default function DocumentSearchPage() {
-  const [searchQuery, setSearchQuery] = useState("msg")
+  const [searchQuery, setSearchQuery] = useState("")
   const [similarityCutoff, setSimilarityCutoff] = useState(23)
   const [maxResults, setMaxResults] = useState(10)
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [showResults, setShowResults] = useState(true)
   const [currentPreviewResult, setCurrentPreviewResult] = useState<SearchResult | null>(null)
 
-  // Пока используем статичный URL для предпросмотра
-  const previewPdfUrl = "/sample-reports/test.pdf"
+  // Get preview PDF URL from selected result
+  const previewPdfUrl = currentPreviewResult?.url || "/ml-course/slides/slides00.pdf"
 
   // Интерфейс для результатов поиска
   interface SearchResult {
     id: string
     title: string
     ingestDate: string
+    url?: string
+    category?: string
   }
 
-  // Имитация результатов поиска
-  const mockResults: SearchResult[] = [
-    {
-      id: "30/100",
-      title: "Fachkonzept_UIP_UNIQA_Phase2_24.Q4_R2R_BiometricStandAlone_ProduktRechnungslegung_20241017_A_Very_Long_Title_That_Should_Wrap_Correctly_To_The_Next_Line_If_Needed",
-      ingestDate: "2023-03-03 11:36:47.550746+00:00",
-    },
-    {
-      id: "26/100",
-      title: "Fachkonzept_UIP_UNIQA_Phase3_22.Q1_ZUVFZV_Übertrag_ProduktRechnungslegung_20220401",
-      ingestDate: "2023-03-03 13:15:20.911022+00:00",
-    }
-  ]
+  // ML Course files - loaded from API
+  const [mlFiles, setMlFiles] = useState<Array<{id: string, name: string, url: string, category: string}>>([])
+  
+  // Load ML course files on mount
+  useEffect(() => {
+    fetch('/api/ai/files')
+      .then(res => res.json())
+      .then(data => {
+        if (data.files) {
+          setMlFiles(data.files.map((f: any) => ({
+            id: f.id,
+            name: f.name,
+            url: f.url,
+            category: f.category
+          })))
+        }
+      })
+      .catch(err => console.error('Error loading ML course files:', err))
+  }, [])
+  
+  // Convert ML files to search results format
+  const getMockResults = (): SearchResult[] => {
+    return mlFiles.slice(0, maxResults).map((file, index) => ({
+      id: `${index + 1}/${mlFiles.length}`,
+      title: file.name.replace('.pdf', ''),
+      ingestDate: new Date().toISOString(),
+      url: file.url,
+      category: file.category
+    }))
+  }
+  
+  const mockResults = getMockResults()
 
   // Функция поиска
   const handleSearch = () => {
-    // Имитация запроса к API
-    setTimeout(() => {
-      setSearchResults(mockResults)
-      setShowResults(true)
-    }, 500)
+    // Filter ML course files based on search query
+    const filtered = mlFiles
+      .filter(file => {
+        const queryLower = searchQuery.toLowerCase()
+        return file.name.toLowerCase().includes(queryLower) || 
+               file.category.toLowerCase().includes(queryLower)
+      })
+      .slice(0, maxResults)
+      .map((file, index) => ({
+        id: `${index + 1}/${mlFiles.length}`,
+        title: file.name.replace('.pdf', ''),
+        ingestDate: new Date().toISOString(),
+        url: file.url,
+        category: file.category
+      }))
+    
+    setSearchResults(filtered.length > 0 ? filtered : mockResults)
+    setShowResults(true)
   }
 
   const handlePreviewOpen = (result: SearchResult) => {
@@ -65,7 +99,7 @@ export default function DocumentSearchPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col p-4 md:p-6 overflow-hidden">
+    <div className="h-screen flex flex-col p-4 md:p-6 overflow-hidden bg-gray-100">
       {/* Хедер страницы */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Document Search</h1>
@@ -110,53 +144,6 @@ export default function DocumentSearchPage() {
               </div>
             </div>
             
-            {/* Ключевые слова */}
-            <div>
-              <p className="text-sm text-gray-500 mb-2">Keywords:</p>
-              <div className="flex items-center gap-2 p-2 border rounded-md">
-                <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm flex items-center gap-1">
-                  msg
-                  <button className="text-blue-800 font-bold">×</button>
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Press enter to add more" 
-                  className="flex-1 focus:outline-none text-sm"
-                />
-              </div>
-            </div>
-            
-            {/* Опции ключевых слов */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="caseSensitive" className="rounded" />
-                <label htmlFor="caseSensitive" className="text-sm">Case Sensitive</label>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="useGlossary" className="rounded" />
-                <label htmlFor="useGlossary" className="text-sm">Use Glossary</label>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <input 
-                  type="radio" 
-                  id="mustContainAll" 
-                  name="requiredWords"
-                  defaultChecked 
-                />
-                <label htmlFor="mustContainAll" className="text-sm">Must contain all words</label>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <input 
-                  type="radio" 
-                  id="canContainAny" 
-                  name="requiredWords" 
-                />
-                <label htmlFor="canContainAny" className="text-sm">Can contain any words</label>
-              </div>
-            </div>
             
             {/* Настройки результатов */}
             <div>
@@ -210,12 +197,29 @@ export default function DocumentSearchPage() {
                         <span className="sr-only">Preview Document</span>
                       </Button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Ingest Date: {result.ingestDate}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {result.category && (
+                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                          {result.category}
+                        </span>
+                      )}
+                      <p className="text-xs text-gray-500">Ingest Date: {result.ingestDate}</p>
+                    </div>
                     
                     <details className="mt-2">
-                      <summary className="text-sm text-blue-600 cursor-pointer">Document Text</summary>
+                      <summary className="text-sm text-blue-600 cursor-pointer">Document Info</summary>
                       <div className="mt-2 p-3 bg-gray-50 rounded text-sm">
-                        <p>Document contains technical information about the product and accounting systems.</p>
+                        <p>ML Course document: {result.title}</p>
+                        {result.url && (
+                          <a 
+                            href={result.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline mt-2 inline-block"
+                          >
+                            Open PDF →
+                          </a>
+                        )}
                       </div>
                     </details>
                   </div>

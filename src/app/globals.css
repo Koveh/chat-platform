@@ -50,8 +50,8 @@
   * {
     @apply border-[#eaeaea] outline-[#b4b4b4]/50;
   }
-  body {
-    @apply bg-[#ffffff] text-[#252525];
+  html, body {
+    @apply bg-gray-100 text-[#252525];
   }
 }
 

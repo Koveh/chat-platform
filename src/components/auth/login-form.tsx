@@ -24,7 +24,7 @@ function LoginFormWithSearchParams() {
     // Проверяем, пришел ли пользователь после успешной регистрации
     const registered = searchParams.get("registered");
     if (registered === "true") {
-      setSuccessMessage("Регистрация прошла успешно! Теперь вы можете войти в систему.");
+      setSuccessMessage("Registration successful! You can now sign in.");
     }
   }, [searchParams]);
 
@@ -68,8 +68,8 @@ function LoginFormWithSearchParams() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Вход в систему</h2>
+    <div className="w-full max-w-md mx-auto p-6 bg-white rounded-xl shadow-sm">
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">Sign In</h2>
       
       {successMessage && (
         <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
@@ -98,16 +98,16 @@ function LoginFormWithSearchParams() {
         
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <Label htmlFor="password">Пароль</Label>
+            <Label htmlFor="password">Password</Label>
             <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-              Забыли пароль?
+              Forgot password?
             </Link>
           </div>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Введите пароль"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -129,7 +129,7 @@ function LoginFormWithSearchParams() {
             onCheckedChange={(checked) => setRememberMe(checked as boolean)} 
           />
           <Label htmlFor="remember" className="text-sm">
-            Запомнить меня на 1 год
+            Remember me for 1 year
           </Label>
         </div>
         
@@ -137,26 +137,26 @@ function LoginFormWithSearchParams() {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Вход...
+              Signing in...
             </>
           ) : (
-            "Войти"
+            "Sign In"
           )}
         </Button>
       </form>
       
       <div className="mt-6 text-center text-sm">
-        <p className="text-gray-600 dark:text-gray-400">
-          Нет аккаунта?{" "}
+        <p className="text-gray-600">
+          Don't have an account?{" "}
           <Link href="/register" className="text-blue-600 hover:underline">
-            Зарегистрироваться
+            Sign up
           </Link>
         </p>
       </div>
       
-      <div className="mt-8 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-8 text-xs text-gray-500">
         <p>
-          При входе в систему вы соглашаетесь на хранение cookie-файлов в течение 1 года для обеспечения удобства использования сервиса.
+          By signing in, you agree to store cookies for 1 year to ensure convenient use of the service.
         </p>
       </div>
     </div>
@@ -166,7 +166,7 @@ function LoginFormWithSearchParams() {
 // Компонент-обертка с Suspense
 export function LoginForm() {
   return (
-    <Suspense fallback={<div className="w-full max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md"><p className="text-center">Загрузка формы входа...</p></div>}>
+    <Suspense fallback={<div className="w-full max-w-md mx-auto p-6 bg-white rounded-xl shadow-sm"><p className="text-center">Loading login form...</p></div>}>
       <LoginFormWithSearchParams />
     </Suspense>
   );

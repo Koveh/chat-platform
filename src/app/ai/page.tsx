@@ -38,10 +38,10 @@ export default function AIPage() {
   };
   
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-2">AI-ассистент для анализа документов</h1>
+    <div className="container mx-auto py-8 px-4 bg-gray-100 min-h-full">
+      <h1 className="text-3xl font-bold mb-2">AI Assistant for Document Analysis</h1>
       <p className="text-muted-foreground mb-8">
-        Загрузите PDF-файл и задайте вопросы по его содержимому
+        Upload a PDF file and ask questions about its content
       </p>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -49,8 +49,8 @@ export default function AIPage() {
         <div className="space-y-6">
           <Tabs defaultValue="upload" className="w-full">
             <TabsList className="grid grid-cols-2 mb-4">
-              <TabsTrigger value="upload">Загрузить</TabsTrigger>
-              <TabsTrigger value="files">Файлы</TabsTrigger>
+              <TabsTrigger value="upload">Upload</TabsTrigger>
+              <TabsTrigger value="files">Files</TabsTrigger>
             </TabsList>
             
             <TabsContent value="upload">

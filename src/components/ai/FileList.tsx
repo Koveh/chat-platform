@@ -11,6 +11,8 @@ interface FileItem {
   size: number;
   type: string;
   uploadedAt: string;
+  category?: string;
+  url?: string;
 }
 
 interface FileListProps {
@@ -48,32 +50,9 @@ export function FileList({ onFileSelect, selectedFileId }: FileListProps) {
     }
   };
 
-  // Функция для удаления файла
+  // Note: ML course files are read-only, deletion is disabled
   const deleteFile = async (fileId: string) => {
-    try {
-      setIsDeleting(fileId);
-      const response = await fetch(`/api/ai/upload?fileId=${fileId}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Ошибка удаления файла');
-      }
-      
-      // Обновляем список файлов
-      setFiles((prevFiles) => prevFiles.filter((file) => file.id !== fileId));
-      toast.success('Файл успешно удален');
-      
-      // Если был выбран удаленный файл, сбрасываем выбор
-      if (selectedFileId === fileId) {
-        onFileSelect('', '');
-      }
-    } catch (error) {
-      console.error('Ошибка удаления файла:', error);
-      toast.error('Не удалось удалить файл');
-    } finally {
-      setIsDeleting(null);
-    }
+    toast.info('ML course files are read-only');
   };
 
   // Функция для форматирования размера файла
@@ -104,10 +83,28 @@ export function FileList({ onFileSelect, selectedFileId }: FileListProps) {
     onFileSelect(fileId, fileName);
   };
 
+  // Group files by category
+  const filesByCategory = files.reduce((acc, file) => {
+    const category = (file as any).category || 'other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(file);
+    return acc;
+  }, {} as Record<string, typeof files>);
+
+  const categoryLabels: Record<string, string> = {
+    slides: 'Slides',
+    exercises: 'Exercises',
+    solutions: 'Solutions',
+    'exam-prep': 'Exam Prep',
+    other: 'Other',
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Загруженные файлы</h3>
+        <h3 className="text-lg font-medium">ML Course Files</h3>
         <Button
           variant="outline"
           size="sm"
@@ -115,48 +112,58 @@ export function FileList({ onFileSelect, selectedFileId }: FileListProps) {
           disabled={isLoading}
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Обновить
+          Refresh
         </Button>
       </div>
 
       {files.length === 0 ? (
         <Card className="p-6 text-center text-muted-foreground">
-          {isLoading ? 'Загрузка...' : 'Нет загруженных файлов'}
+          {isLoading ? 'Loading...' : 'No files available'}
         </Card>
       ) : (
-        <div className="space-y-2">
-          {files.map((file) => (
-            <Card
-              key={file.id}
-              className={`p-4 flex items-center justify-between transition-colors ${
-                selectedFileId === file.id ? 'bg-primary/5 border-primary/50' : ''
-              }`}
-            >
-              <Button
-                variant="ghost"
-                className="flex items-center flex-1 justify-start p-0 h-auto"
-                onClick={() => handleFileSelect(file.id, file.name)}
-              >
-                <File className="w-5 h-5 mr-3 text-primary" />
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="font-medium truncate">{file.name}</p>
-                  <div className="flex items-center text-xs text-muted-foreground mt-1">
-                    <span>{formatFileSize(file.size)}</span>
-                    <span className="mx-2">•</span>
-                    <span>{formatDate(file.uploadedAt)}</span>
-                  </div>
-                </div>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => deleteFile(file.id)}
-                disabled={isDeleting === file.id}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className={`w-4 h-4 ${isDeleting === file.id ? 'animate-spin' : ''}`} />
-              </Button>
-            </Card>
+        <div className="space-y-6">
+          {Object.entries(filesByCategory).map(([category, categoryFiles]) => (
+            <div key={category}>
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2 uppercase">
+                {categoryLabels[category] || category}
+              </h4>
+              <div className="space-y-2">
+                {categoryFiles.map((file) => (
+                  <Card
+                    key={file.id}
+                    className={`p-4 flex items-center justify-between transition-colors ${
+                      selectedFileId === file.id ? 'bg-primary/5 border-primary/50' : ''
+                    }`}
+                  >
+                    <Button
+                      variant="ghost"
+                      className="flex items-center flex-1 justify-start p-0 h-auto"
+                      onClick={() => handleFileSelect(file.id, file.name)}
+                    >
+                      <File className="w-5 h-5 mr-3 text-primary" />
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="font-medium truncate">{file.name}</p>
+                        <div className="flex items-center text-xs text-muted-foreground mt-1">
+                          <span>{formatFileSize(file.size)}</span>
+                          <span className="mx-2">•</span>
+                          <span>{formatDate(file.uploadedAt)}</span>
+                        </div>
+                      </div>
+                    </Button>
+                    <a
+                      href={file.url || `/ml-course/${category}/${file.name}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/80 ml-2 p-1"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Open in new tab"
+                    >
+                      <File className="w-4 h-4" />
+                    </a>
+                  </Card>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}

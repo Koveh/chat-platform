@@ -6,9 +6,16 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password, name } = await request.json();
 
-    if (!email || !password) {
+    if (!email || !password || !name) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Email, password, and name are required' },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: 'Password must be at least 8 characters' },
         { status: 400 }
       );
     }

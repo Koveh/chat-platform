@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import {
   Search,
   FileText,
@@ -22,17 +23,16 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 
 interface SidebarNavProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-// Mock history data
-const historyItems = [
-  { id: 1, title: "Document search: IT Security", date: "2025-04-01" },
-  { id: 2, title: "Database restoration guide", date: "2025-03-28" },
-  { id: 3, title: "API Documentation", date: "2025-03-25" },
-  { id: 4, title: "User management procedures", date: "2025-03-20" },
-  { id: 5, title: "System backup protocols", date: "2025-03-15" },
-]
+interface ChatHistoryItem {
+  chat_id: string
+  last_message: string
+  last_timestamp: string
+  name?: string
+}
 
 export function SidebarNav({ className, ...props }: SidebarNavProps) {
   const [collapsed, setCollapsed] = React.useState(false)
@@ -40,10 +40,125 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
   const [isResizing, setIsResizing] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
   const [navVisible, setNavVisible] = React.useState(false)
+  const [chatHistory, setChatHistory] = React.useState<ChatHistoryItem[]>([])
+  const [loadingHistory, setLoadingHistory] = React.useState(true)
   const sidebarRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
   const minWidth = 200
   const maxWidth = 500
   const collapsedWidth = 64
+
+  // Fetch chat history
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      try {
+        const response = await fetch('/api/chat/chats')
+        if (response.ok) {
+          const data = await response.json()
+          const chats = data.chats || []
+          setChatHistory(chats)
+          if (chats.length === 0) {
+            console.log('No chat history found - user may not have any chats yet')
+          }
+        } else if (response.status === 401) {
+          // Not authenticated, clear history
+          setChatHistory([])
+        } else {
+          console.error('Failed to fetch chat history:', response.status)
+          setChatHistory([])
+        }
+      } catch (error) {
+        console.error('Error fetching chat history:', error)
+        setChatHistory([])
+      } finally {
+        setLoadingHistory(false)
+      }
+    }
+
+    fetchChatHistory()
+    // Refresh history every 30 seconds
+    const interval = setInterval(fetchChatHistory, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const formatChatTitle = (chatId: string, lastMessage: string, customName?: string) => {
+    // Use custom name if available
+    if (customName) {
+      return customName.length > 40 ? customName.substring(0, 40) + '...' : customName
+    }
+    
+    // If chat_id contains a file reference, extract filename
+    if (chatId.startsWith('chat_ml-')) {
+      const parts = chatId.replace('chat_', '').split('-')
+      if (parts.length >= 3) {
+        const category = parts[1]
+        const filename = parts.slice(2).join('-').replace('.pdf', '')
+        return `${category}: ${filename}`
+      }
+    }
+    // Handle chat_ prefix removal
+    const cleanChatId = chatId.replace('chat_', '')
+    
+    // If it's a default chat, use last message
+    if (cleanChatId === 'default') {
+      if (lastMessage) {
+        const preview = lastMessage.substring(0, 40)
+        return preview.length < lastMessage.length ? `${preview}...` : preview
+      }
+      return 'New Chat'
+    }
+    
+    // Otherwise use first part of last message or chat_id
+    if (lastMessage) {
+      const preview = lastMessage.substring(0, 40)
+      return preview.length < lastMessage.length ? `${preview}...` : preview
+    }
+    return cleanChatId || 'Chat'
+  }
+
+  const handleNewChat = () => {
+    const newChatId = `chat_${Date.now()}`
+    router.push(`/?chat=${newChatId}`)
+    router.refresh()
+  }
+
+  const formatDate = (timestamp: string) => {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return `${diffDays} days ago`
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined })
+  }
+
+  const handleChatClick = (chatId: string) => {
+    router.push(`/?chat=${encodeURIComponent(chatId)}`)
+    router.refresh()
+  }
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        router.push('/login')
+        router.refresh()
+      } else {
+        console.error('Logout failed')
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
 
   // Check if the device is mobile
   useEffect(() => {
@@ -142,7 +257,7 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
       <div
         ref={sidebarRef}
         className={cn(
-          "h-screen bg-gray-100 flex flex-col transition-all duration-300 relative",
+          "h-screen bg-gray-100 flex flex-col transition-all duration-300 relative border-r border-gray-200",
           isResizing ? "transition-none select-none" : "transition-width",
           collapsed ? "w-16" : "",
           isMobile && "fixed top-0 left-0 z-40",
@@ -157,22 +272,22 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
           <div className={cn("flex gap-1", collapsed && "w-full justify-center")}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 bg-white">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat}>
                   <Plus className="h-4 w-4" />
-                  <span className="sr-only">New item</span>
+                  <span className="sr-only">New chat</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>New item</TooltipContent>
+              <TooltipContent className="bg-gray-900 text-white">New chat</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 bg-white" onClick={() => setCollapsed(!collapsed)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCollapsed(!collapsed)}>
                   {collapsed ? <ChevronRight className="h-4 w-4" /> : <X className="h-4 w-4" />}
                   <span className="sr-only">{collapsed ? "Expand sidebar" : "Collapse sidebar"}</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{collapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
+              <TooltipContent className="bg-gray-900 text-white">{collapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
             </Tooltip>
           </div>
         </div>
@@ -217,24 +332,46 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
               <div>
                 {!collapsed && <h3 className="text-xs font-medium uppercase text-gray-500 mb-2">History</h3>}
                 <nav className="space-y-1">
-                  {historyItems.map((item) => (
-                    <NavItem
-                      key={item.id}
-                      href="#"
-                      icon={null}
-                      collapsed={collapsed}
-                      className={collapsed ? "" : "flex-col items-start gap-0"}
-                    >
-                      {collapsed ? (
-                        `History ${item.id}`
-                      ) : (
+                  {loadingHistory ? (
+                    <div className="px-3 py-2 text-xs text-gray-500">
+                      {collapsed ? "..." : "Loading..."}
+                    </div>
+                  ) : chatHistory.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-gray-500 text-center">
+                      {collapsed ? "..." : (
                         <>
-                          <span className="line-clamp-1 w-full">{item.title}</span>
-                          <span className="text-xs text-gray-500">{item.date}</span>
+                          <p>No chat history</p>
+                          <p className="text-[10px] mt-1 opacity-75">Start a conversation to see it here</p>
                         </>
                       )}
-                    </NavItem>
-                  ))}
+                    </div>
+                  ) : (
+                    chatHistory.slice(0, 10).map((chat) => (
+                      <div
+                        key={chat.chat_id}
+                        onClick={() => handleChatClick(chat.chat_id)}
+                        className="cursor-pointer"
+                      >
+                        <NavItem
+                          href="#"
+                          icon={null}
+                          collapsed={collapsed}
+                          className={collapsed ? "" : "flex-col items-start gap-0"}
+                        >
+                        {collapsed ? (
+                          <MessageSquare className="h-4 w-4" />
+                        ) : (
+                          <>
+                            <span className="line-clamp-1 w-full text-sm font-medium">
+                              {formatChatTitle(chat.chat_id, chat.last_message, chat.name)}
+                            </span>
+                            <span className="text-xs text-gray-500">{formatDate(chat.last_timestamp)}</span>
+                          </>
+                        )}
+                        </NavItem>
+                      </div>
+                    ))
+                  )}
                 </nav>
               </div>
             </div>
@@ -253,11 +390,18 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
               </TooltipTrigger>
               <TooltipContent className="p-3 bg-gray-50 backdrop-blur-sm">
                 <div className="flex flex-col gap-2">
-                  <Button variant="ghost" size="sm" className="justify-start gap-2 px-2">
-                    <ChartBar className="h-4 w-4 text-gray-600" />
-                    <span className="text-gray-600">Statistics</span>
+                  <Button variant="ghost" size="sm" className="justify-start gap-2 px-2" asChild>
+                    <Link href="/statistics">
+                      <ChartBar className="h-4 w-4 text-gray-600" />
+                      <span className="text-gray-600">Statistics</span>
+                    </Link>
                   </Button>
-                  <Button variant="ghost" size="sm" className="justify-start gap-2 px-2 text-red-600 hover:text-red-700 hover:bg-red-50">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="justify-start gap-2 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={handleLogout}
+                  >
                     <LogOut className="h-4 w-4 text-red-600" />
                     Log out
                   </Button>
@@ -299,7 +443,7 @@ function NavItem({ href, icon, children, collapsed, className, ...props }: NavIt
             {icon}
           </a>
         </TooltipTrigger>
-        <TooltipContent side="right">
+        <TooltipContent side="right" className="bg-gray-900 text-white">
           <p>{typeof children === "string" ? children : "Menu item"}</p>
         </TooltipContent>
       </Tooltip>
