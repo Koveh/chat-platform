@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // Use gpt-4o-mini as fallback (gpt-5-nano may not exist yet)
+        model: 'gpt-5-nano',
         messages: [
           {
             role: 'system',
@@ -57,10 +57,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error generating chat name:', error);
     // Fallback to simple extraction
-    const words = question.split(' ').slice(0, 5).join(' ');
-    return NextResponse.json({ 
-      name: words.length > 40 ? words.substring(0, 40) + '...' : words 
-    });
+    try {
+      const body = await request.json();
+      const questionFallback = body.question || 'New Chat';
+      const words = questionFallback.split(' ').slice(0, 5).join(' ');
+      return NextResponse.json({ 
+        name: words.length > 40 ? words.substring(0, 40) + '...' : words 
+      });
+    } catch {
+      return NextResponse.json({ name: 'New Chat' });
+    }
   }
 }
 
