@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+/* Основные CSS переменные */
+:root {
+  /* Цвета */
+  --background: #ffffff;
+  --foreground: #252525;
+  --card: #ffffff;
+  --card-foreground: #252525;
+  --popover: #ffffff;
+  --popover-foreground: #252525;
+  --primary: #343434;
+  --primary-foreground: #fafafa;
+  --secondary: #f8f8f8;
+  --secondary-foreground: #343434;
+  --muted: #f8f8f8;
+  --muted-foreground: #8e8e8e;
+  --accent: #f8f8f8;
+  --accent-foreground: #343434;
+  --destructive: #eb4a4a;
+  --destructive-foreground: #eb4a4a;
+  --border: #eaeaea;
+  --input: #eaeaea;
+  --ring: #b4b4b4;
+  
+  /* График */
+  --chart-1: #a56435;
+  --chart-2: #3d95ad;
+  --chart-3: #2a5385;
+  --chart-4: #d37f4b;
+  --chart-5: #c4713a;
+  
+  /* Скругления */
+  --radius: 0.625rem;
+  
+  /* Боковая панель */
+  --sidebar: #fbfbfb;
+  --sidebar-foreground: #252525;
+  --sidebar-primary: #343434;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #f8f8f8;
+  --sidebar-accent-foreground: #343434;
+  --sidebar-border: #eaeaea;
+  --sidebar-ring: #b4b4b4;
+}
+
+@layer base {
+  * {
+    @apply border-[#eaeaea] outline-[#b4b4b4]/50;
+  }
+  body {
+    @apply bg-[#ffffff] text-[#252525];
+  }
+}
+
+/* Стили для кастомного скроллбара */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  opacity: 0.3;
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+  opacity: 0.5;
+}
+
